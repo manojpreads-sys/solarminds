@@ -1,0 +1,224 @@
+{
+  "name": "My workflow 2",
+  "nodes": [
+    {
+      "parameters": {
+        "multipleMethods": true,
+        "httpMethod": [
+          "POST"
+        ],
+        "path": "=image-upload ",
+        "options": {
+          "binaryPropertyName": "data0"
+        }
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        960,
+        0
+      ],
+      "id": "28f9b17a-bab5-47dd-a22e-3d33edefad50",
+      "name": "Webhook",
+      "webhookId": "6d62a59c-f22c-43dd-a2a5-6409bb57e61c",
+      "executeOnce": false,
+      "alwaysOutputData": true,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=analyse the given image\"{{ $json.error }}{{ $json.details }}\"and give if the worker in the image is wearing \nsafety gear give the output as \"present \"else give the output as \"not present\"for all the workers in the image with their safe percentage and make a beep sound if safety gears are not weared by the workers\n",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3,
+      "position": [
+        1776,
+        0
+      ],
+      "id": "37bce714-45f7-4a7c-9d81-82651a7f85b9",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "sendTo": "mukheshjagan30@gmail.com",
+        "subject": "from automation system",
+        "emailType": "text",
+        "message": "={{ $json.output }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        2112,
+        0
+      ],
+      "id": "8f7ee22a-0602-4873-b89d-de57282ba242",
+      "name": "Send a message",
+      "webhookId": "f95face1-cb58-491b-8f62-1cc88b5169e2",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "LIoQibwOXriz7M1U",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "binaryToPropery",
+        "binaryPropertyName": "data00",
+        "destinationKey": "image",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1.1,
+      "position": [
+        1296,
+        0
+      ],
+      "id": "90d58887-d082-4321-aded-8ca852cd0928",
+      "name": "Extract from File"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.0-flash",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        1776,
+        256
+      ],
+      "id": "c66e713a-226c-4de8-b050-5c5d0b4dad7e",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "7lU2OUQVo2mPE9q5",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const base64 =$input.first().json.image ;\n// Validate input\nif (typeof base64 !== 'string' || !base64.trim()) { \n  return [{ json: {error:'Missing or invalid base64Data input'} }];\n}\n\nlet jsonString;\ntry {\n  jsonString = Buffer.from(base64, '$input.first().json.image').toString('utf-8');\n} catch (decodeError) {\n  return[{ json:{error:'Failed to decode Base64 string',details: decodeError.message} }];\n}\n\nlet parsedJson;\ntry {\n  parsedJson = JSON.parse(jsonString);\n} catch (parseError) {\n  return[{ json: { error:'Decoded string is not valid JSON', details: parseError.message} }];\n}\n\nreturn [{ json: parsedJson }];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1520,
+        0
+      ],
+      "id": "7182d148-13ed-4aa8-b33e-81dcb87231a3",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "formTitle": "vision automation",
+        "formDescription": "upload the image",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "image",
+              "fieldType": "file",
+              "acceptFileTypes": ".jpeg,.png,.img,.jpg",
+              "requiredField": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.3,
+      "position": [
+        1184,
+        272
+      ],
+      "id": "a42e80ba-8f9d-4c89-9130-11a8873aaa11",
+      "name": "On form submission",
+      "webhookId": "7990bddf-a167-4db0-a37d-3859b7ea62f5"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Extract from File",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from File": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "On form submission": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "4f5e7c6e-262f-4555-b2a5-bea3eb887bd2",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "012c54039e3cfa5fc09681cfbbfd290f2d993813fa6a6c8bde8b531f484f6869"
+  },
+  "id": "MU6MPHBK33tmUhBx",
+  "tags": []
+}
